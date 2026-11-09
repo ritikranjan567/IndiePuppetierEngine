@@ -2,24 +2,29 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <string>
+#include <stdexcept>
 
 /// @brief Class is responsible for creating windows for engine
 class Window {
 public:
-    Window() = default;
-    Window(int width, int height, const std::string& title);
+    explicit Window(int width, int height, const std::string& title);
     ~Window();
+    Window(const Window&) = delete;
+    Window& operator=(const Window&) = delete;
+    Window(Window&& other) noexcept;
+    Window& operator=(Window&& other) noexcept;
 
-    void update();
+    void render();
     GLFWwindow* getGLFWwindow() const noexcept;
-    void closeWindow();
-    bool isClosed() const noexcept;
-    void setColor(float r, float g, float b, float a);
+    void setShouldClose(bool flag);
+    bool shouldClose() const noexcept;
+    void destroy() noexcept;
 
 private:
     std::string title;
     GLFWwindow* window;
     int width, height;
+    static bool gladLoaded;
     void setUp();
-    static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+    static void framebuffer_size_callback([[maybe_unused]]GLFWwindow* window, int width, int height);
 };

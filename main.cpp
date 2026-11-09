@@ -1,26 +1,54 @@
 #include <iostream>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <IPEngine/Window/Window.hpp>
+#include <IPEngine/Window/GLFW.hpp>
+#include<vector>
+#include <fstream>
 
 int main() {
 
-    int res = glfwInit();
-    if (res != GLFW_TRUE) throw "Error in init";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    GLFW::init(3, 3);
+    
+    Window window(800, 600, "Puppetier");
 
-    #if defined(__APPLE__) || defined(Macintosh)
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    #endif
+    float vertices[] = {
+        -0.5f, -0.5f, 0.0f,
+        0.5f, -0.5f, 0.0f,
+        0.0f,  0.5f, 0.0f
+    };
 
-    Window window1(800, 600, "First window");
+    glEnable(GL_DEPTH_TEST);
 
-    while(window1.isClosed()) {
-        window1.update();
+    unsigned int VBO;
+    glGenBuffers(1, &VBO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // read from glsl file
+    std::ifstream vertexFile("assets/shaders/vertex_core.glsl");
+    std::string vertexFileStr((std::istreambuf_iterator<char>(vertexFile)), 
+        (std::istreambuf_iterator<char>()));
+
+    const char* vertexShaderSource = vertexFileStr.c_str();
+
+    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+
+    if (!vertexFile.is_open()) {
+        std::cout << "Unable to open the file" << std::endl;
+        return -1;
     }
 
+    while(!window.shouldClose()) {
+        window.render();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        glfwPollEvents();
+    }
+
+    glfwTerminate();
 
     return 0;
 }

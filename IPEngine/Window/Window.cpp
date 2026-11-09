@@ -1,20 +1,41 @@
 #include <IPEngine/Window/Window.hpp>
+#include <utility>
 
-Window::Window(int width, int height, const std::string& title) : 
+bool Window::gladLoaded = false;
+
+Window::Window(int width, int height, const std::string& title) :
     title(title), window(nullptr), width(width), height(height) {
     setUp();
 }
 
 Window::~Window()
 {
-    glfwTerminate();
+    destroy();
 }
 
-void Window::update()
+Window::Window(Window&& other) noexcept :
+    title(std::move(other.title)),
+    window(std::exchange(other.window, nullptr)),
+    width(other.width),
+    height(other.height) {
+}
+
+Window& Window::operator=(Window&& other) noexcept
 {
-    glfwPollEvents();
+    if (this != &other) {
+        destroy();
+        title = std::move(other.title);
+        window = std::exchange(other.window, nullptr);
+        width = other.width;
+        height = other.height;
+    }
+    return *this;
+}
+
+void Window::render()
+{
+    glfwMakeContextCurrent(window);
     glfwSwapBuffers(window);
-    glClear(GL_COLOR_BUFFER_BIT);
 }
 
 GLFWwindow *Window::getGLFWwindow() const noexcept
@@ -22,44 +43,50 @@ GLFWwindow *Window::getGLFWwindow() const noexcept
     return window;
 }
 
-void Window::closeWindow()
+void Window::setShouldClose(bool flag)
 {
-    glfwSetWindowShouldClose(window, true);
+    glfwSetWindowShouldClose(window, flag);
 }
 
-bool Window::isClosed() const noexcept
+bool Window::shouldClose() const noexcept
 {
-    return !glfwWindowShouldClose(window);
+    return glfwWindowShouldClose(window);
 }
 
-void Window::setColor(float r, float g, float b, float a)
+void Window::destroy() noexcept
 {
-    glClearColor(r, g, b, a);
+    if (window) {
+        glfwDestroyWindow(window);
+        window = nullptr;
+    }
 }
 
 void Window::setUp()
 {
-
     window = glfwCreateWindow(width, height, title.data(), NULL, NULL);
 
-    if (window == NULL) {
-        glfwTerminate();
-        throw "Failed to create glfw window";
+    if (!window) {
+        throw std::runtime_error("Failed to create GLFW window " + title);
     }
 
     glfwMakeContextCurrent(window);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    if (!Window::gladLoaded && !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        glfwTerminate();
-        throw "Failed to initialize GLAD";
+        destroy();
+        throw std::runtime_error("Failded to load glad for window " + title);
     }
 
-    glViewport(0, 0, width, height);
+    Window::gladLoaded = true;
+
+    int tempWidth, tempHeight;
+    glfwGetFramebufferSize(window, &tempWidth, &tempHeight);
+    glViewport(0, 0, tempWidth, tempHeight);
+
     glfwSetFramebufferSizeCallback(window, Window::framebuffer_size_callback);
 }
 
-void Window::framebuffer_size_callback(GLFWwindow* _window, int width, int height)
+void Window::framebuffer_size_callback([[maybe_unused]]GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }

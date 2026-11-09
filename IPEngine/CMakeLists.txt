@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.23)
 
 add_library(IPEngine)
 
-target_sources(IPEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Window/Window.cpp
+target_sources(IPEngine PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/Window/Window.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Window/GLFW.cpp
     ${CMAKE_SOURCE_DIR}/external/lib/glad/glad.c)
 
 # compiler option for c++ warnings
